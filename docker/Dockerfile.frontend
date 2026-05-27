@@ -1,0 +1,25 @@
+FROM node:22-alpine AS modern-builder
+
+WORKDIR /app
+
+COPY frontend-modern/package.json frontend-modern/package-lock.json ./
+RUN npm ci
+
+COPY frontend-modern/index.html ./
+COPY frontend-modern/vite.config.ts ./
+COPY frontend-modern/tsconfig.json frontend-modern/tsconfig.app.json frontend-modern/tsconfig.node.json ./
+COPY frontend-modern/postcss.config.js frontend-modern/tailwind.config.js ./
+COPY frontend-modern/public ./public
+COPY frontend-modern/src ./src
+
+RUN npm run build
+
+FROM nginxinc/nginx-unprivileged:1.27-alpine
+
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY frontend/index.html /usr/share/nginx/html/index.html
+COPY frontend/script.js /usr/share/nginx/html/script.js
+COPY frontend/styles.css /usr/share/nginx/html/styles.css
+COPY --from=modern-builder /app/dist /usr/share/nginx/html/modern
+
+EXPOSE 8080

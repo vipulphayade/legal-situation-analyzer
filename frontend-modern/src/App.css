@@ -1,0 +1,124 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&display=swap");
+
+:root {
+  --workspace-bg: #f5f3ee;
+  --surface: #fffdf8;
+  --field: #f8f5ee;
+  --line: #ddd6c8;
+  --ink: #1f2933;
+  --muted-ink: #667085;
+  --accent: #355f7d;
+  --accent-strong: #27465f;
+  --accent-soft: #e8f0f4;
+  --success-soft: #f1faf7;
+  --ring-soft: #d9e1df;
+  --skeleton: #e9e2d6;
+  --shadow-soft: 0 16px 36px rgba(31, 41, 51, 0.08);
+}
+
+.dark {
+  --workspace-bg: #0d1218;
+  --surface: #111923;
+  --field: #151f2b;
+  --line: #263445;
+  --ink: #edf2f7;
+  --muted-ink: #a9b7c8;
+  --accent: #8bb7d9;
+  --accent-strong: #a7cae4;
+  --accent-soft: rgba(139, 183, 217, 0.16);
+  --success-soft: rgba(21, 128, 105, 0.14);
+  --ring-soft: #27384a;
+  --skeleton: #202d3b;
+  --shadow-soft: 0 18px 42px rgba(0, 0, 0, 0.34);
+}
+
+body {
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.88), rgba(245, 243, 238, 0.96)),
+    repeating-linear-gradient(90deg, rgba(31, 41, 51, 0.035) 0 1px, transparent 1px 72px),
+    repeating-linear-gradient(0deg, rgba(31, 41, 51, 0.025) 0 1px, transparent 1px 72px),
+    var(--workspace-bg);
+}
+
+.dark body {
+  background:
+    linear-gradient(180deg, rgba(13, 18, 24, 0.96), rgba(13, 18, 24, 0.99)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 72px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 72px),
+    var(--workspace-bg);
+}
+
+.font-serif {
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+}
+
+.legal-surface,
+.layered-panel {
+  border-radius: 12px;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease,
+    background-color 180ms ease;
+}
+
+.legal-surface:hover,
+.layered-panel:hover {
+  border-color: color-mix(in oklab, var(--accent) 28%, var(--line));
+  box-shadow: 0 20px 44px rgba(31, 41, 51, 0.1);
+}
+
+.dark .legal-surface:hover,
+.dark .layered-panel:hover {
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.38);
+}
+
+.layered-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--accent) 18%, var(--line));
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--accent-soft) 60%, transparent), transparent 45%),
+    var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.layered-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), #6f8f7d);
+}
+
+.workspace-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .sticky {
+    position: static;
+  }
+}

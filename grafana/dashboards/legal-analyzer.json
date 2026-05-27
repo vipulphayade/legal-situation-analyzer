@@ -1,0 +1,83 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "API Request Count",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (path, method, status) (rate(legal_analyzer_api_requests_total[5m]))",
+          "legendFormat": "{{method}} {{path}} {{status}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "type": "timeseries",
+      "title": "API Latency",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, path, method) (rate(legal_analyzer_api_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "p95 {{method}} {{path}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Retrieval Latency",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(legal_analyzer_retrieval_duration_seconds_bucket[5m]))",
+          "legendFormat": "p95 retrieval"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Retrieval Failure Count",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(legal_analyzer_retrieval_failures_total[5m]))",
+          "legendFormat": "retrieval failures/sec"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Negative Score / Applicability Filters",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(legal_analyzer_negative_score_total[5m]))",
+          "legendFormat": "negative scores/sec"
+        },
+        {
+          "expr": "sum(rate(legal_analyzer_applicability_filter_negative_total[5m]))",
+          "legendFormat": "applicability rejects/sec"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["legal", "prometheus"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "Legal Analyzer Metrics",
+  "uid": "legal-analyzer-metrics",
+  "version": 1
+}
