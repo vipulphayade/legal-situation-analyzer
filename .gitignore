@@ -1,0 +1,14 @@
+node_modules
+dist
+build
+.vite
+__pycache__
+*.pyc
+.cache
+coverage
+tmp
+temp
+.env
+.env.local
+grafana/data
+prometheus/data
