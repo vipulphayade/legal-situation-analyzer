@@ -3,6 +3,9 @@
 ## Repository Purpose
 This repository powers a legal retrieval system for Maharashtra cooperative housing society bye-laws. It is **not** a generic chatbot. The system should retrieve the most relevant bye-law first, then explain it in plain English, then offer practical guidance and only then surface clarification if needed.
 
+## API Version
+`4.0.0` — 6 FastAPI endpoints, Pydantic v2 validation, SQLAlchemy async connection pooling.
+
 ## Core Architecture Rules
 - Retrieval must happen before clarification.
 - Clarification is additive metadata, not a replacement for retrieval results.
@@ -11,13 +14,18 @@ This repository powers a legal retrieval system for Maharashtra cooperative hous
 - Preserve frontend/backend response compatibility.
 
 ## Repository Structure
-- `api/`: FastAPI backend, retrieval, reranking, schemas, embeddings, explainability, dataset checks, and orchestration.
-- `frontend/`: HTML, CSS, and JavaScript UI.
-- `dataset/`: canonical dataset inputs and outputs.
-- `database/`: SQL initialization and database assets.
-- `docker/`: Dockerfiles for the services.
-- `kubernetes/`: deployment manifests.
-- `docs/`: architecture and integration notes.
+- `api/`: FastAPI backend (15 modules), retrieval, reranking, schemas, embeddings, explainability, dataset checks, and orchestration.
+- `frontend/`: Legacy HTML, CSS, and JavaScript UI.
+- `frontend-modern/`: React 19 + TypeScript + Vite + Tailwind + shadcn/ui SPA.
+- `dataset/`: Canonical 247-record, 57-field dataset.
+- `database/`: PostgreSQL + pgvector init schema, Alembic migrations, and database assets.
+- `docker/`: Dockerfiles for api, database, and frontend.
+- `kubernetes/`: 4 deployment manifests (api, frontend, postgres, secrets).
+- `docs/`: Architecture and integration notes.
+- `prometheus/`: Prometheus scrape config.
+- `grafana/`: Provisioned dashboard and datasource.
+- `scripts/`: 53 dataset extraction and analysis tools.
+- `tests/`: 74 tests (6 test files), 99-query benchmark.
 
 ## Backend Conventions
 - Prefer small, targeted changes in `api/search.py`, `api/hybrid_retrieval.py`, `api/reranker.py`, `api/query_understanding.py`, `api/followup_guard.py`, `api/applicability_filter.py`, and `api/schemas.py` when working on retrieval or response shape.
@@ -41,6 +49,26 @@ This repository powers a legal retrieval system for Maharashtra cooperative hous
 - Keep topic-group specificity strong to reduce semantic contamination.
 - Related bye-laws should be shown with relevance scores, not hidden behind clarification.
 - If a query is broad, surface the likely governing bye-law and show ambiguity honestly.
+
+## Scoring Formula
+```
+final_score = semantic × 0.40 + lexical × 0.30 + legal_score × 0.08 + topic × 0.14
+              + phrase_boost + section_bias + exact_bonus
+```
+- **semantic**: cosine similarity (SentenceTransformers `all-MiniLM-L6-v2`)
+- **lexical**: weighted term overlap with tuned per-term weights
+- **legal_score**: weighted overlap against `official_excerpt` and `source_grounded_official_text`
+- **topic**: fuzzy match between query topic and candidate topic/topic_group/chapter
+- **phrase_boost**: domain-specific phrase pairs (general body, quorum, sinking fund, etc.)
+- **section_bias**: topic-specific section boosts (e.g., agm → section 100 +0.28, parking → section 78 +0.30)
+- **exact_bonus**: +0.08 when query terms in title, +0.40 for quorum in quorum-containing title
+
+## Strategy Selection
+| Strategy | Trigger | Behavior |
+|---|---|---|
+| `EXACT_CITATION` | Section/subsection ref detected | Direct DB lookup, returns with 1.0 confidence, bypasses all scoring |
+| `KEYWORD_SEMANTIC` | Entity+intent detected, or focused topic (score ≥ 2) | Lexical-weighted scoring (semantic × 0.25, lexical × 0.55, topic × 0.12) |
+| `HYBRID_RERANKER` | Vague, short, or general queries | Full heuristic scoring → reranker top-20 → consensus merge |
 
 ## Dataset Handling Rules
 - Keep exact legal text separate from explanation text.
@@ -78,21 +106,51 @@ This repository powers a legal retrieval system for Maharashtra cooperative hous
 - Merge logic: reranker top-5 first, then heuristic top-5 fillers — non-regressive.
 - Fallback: if reranker raises any `Exception`, silently falls back to heuristic-only.
 - Exact citation lookups bypass reranking entirely (early return before scoring).
-- Latency measured by `RERANKER_LATENCY` Prometheus histogram (key: `legal_analyzer_reranker_duration_seconds`).
+- Latency measured by `legal_analyzer_reranker_duration_seconds` histogram.
 - Current CPU latency: ~200-220ms per query for 20 candidates (model: `cross-encoder/ms-marco-MiniLM-L-6-v2`).
-- Benchmark with reranker: Top-1 80.8%, MRR 0.8405 (+21pp / +0.147 over heuristic-only).
+- Verified benchmark (99 queries, Docker + PostgreSQL + cross-encoder): Top-1 75.8%, MRR 0.8095, 0 errors.
 
 ## Confidence Thresholds
 - Confidence formula: `primary_score * 0.85 + score_gap * 0.15 + consensus_bonus`.
 - Consensus bonus: +0.08 when heuristic top-1 == reranker top-1, -0.05 when they disagree.
+- Clamped to [0.05, 0.98].
 - Labels: **Strong Match** (>= 0.80), **Likely Relevant** (>= 0.65), **Broad Topic Match** (>= 0.40), **Weak Match** (< 0.40).
 - Clarification tiers:
-  - `primary_score < 0.35`: NO_MATCH — always asks for clarification.
-  - `0.35 <= primary_score < 0.55`: LOW — asks for clarification.
-  - `0.55 <= primary_score < 0.65`: asks for clarification only if query is broad or low-signal.
-  - `primary_score >= 0.65`: MEDIUM/HIGH — no clarification needed.
+  - `< 0.35`: NO_MATCH — always asks for clarification.
+  - `0.35–0.55`: LOW — always asks for clarification.
+  - `0.55–0.65`: asks for clarification only if query is broad, low-signal, or topic-ambiguous.
+  - `>= 0.65`: MEDIUM/HIGH — no clarification needed.
 - The `confidence_label` field displays "Needs Clarification" when `needs_clarification=true`, overriding the numeric label.
 - When `needs_clarification=true` and confidence >= 0.55, confidence is capped at 0.55 to avoid misleading high-confidence display.
+
+## Security & Production Controls
+| Control | Detail |
+|---|---|
+| Auth | `X-API-Key` via `secrets.compare_digest`; disabled with warning when unset |
+| Rate limiting | slowapi, 20/min default |
+| CORS | Configurable `API_ALLOWED_ORIGINS`, default localhost:8080 |
+| Trusted hosts | Configurable `ALLOWED_HOSTS` allowlist |
+| Security headers | X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Cache-Control |
+| Request timeout | 30s configurable |
+| Graceful shutdown | 25s drain |
+| DB pool | pool_pre_ping, pool_recycle=3600, size 10 |
+| Production validation | `PRODUCTION=1` fails startup on missing/placeholder credentials |
+| Full gap audit | `PRODUCTION_READINESS_AUDIT.md` — 8 P0, 16 P1, 16 P2, 16 P3 findings |
+
+## Observability
+**11 Prometheus metric families**: requests total, request duration, retrieval duration, reranker duration, DB pool size, negative scores, retrieval failures, candidate count, top score, final confidence, clarifications.
+**Structured logging**: 20+ field JSON per retrieval with score breakdowns, confidence, clarify status, reranker usage, drift flags.
+
+## Infrastructure
+- **Docker Compose**: 5 services (db, api, frontend, prometheus, grafana)
+- **Kubernetes**: 4 manifests with security contexts, probes, SecretRefs
+- **Frontend**: Legacy UI at `/`, React 19 SPA at `/modern/`
+
+## Query Understanding
+- 13 topic groups, 12 intent patterns
+- Actor/action/subject extraction
+- Topic drift detection for follow-up
+- Section reference regex (e.g., "section 100", "bye-law 78")
 
 ## Prompting Expectations for Future Codex Tasks
 - State the exact issue, the affected layer, and the desired behavior.
@@ -100,4 +158,5 @@ This repository powers a legal retrieval system for Maharashtra cooperative hous
 - Ask for the smallest safe change set.
 - Preserve v6 orchestration unless explicitly told otherwise.
 - When uncertainty exists, prefer stable retrieval with honest ambiguity over false certainty.
+- Project root is `C:\Users\Vipul\Documents\New project\legal-situation-analyzer`.
 

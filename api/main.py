@@ -33,14 +33,44 @@ _LOG_FORMAT = os.getenv("LOG_FORMAT", "%(asctime)s [%(levelname)s] %(name)s: %(m
 _LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(stream=sys.stdout, format=_LOG_FORMAT, level=_LOG_LEVEL)
 logger = logging.getLogger(__name__)
+_audit_logger = logging.getLogger("audit")
 logger.info("Starting Legal Situation Analyzer API v4.0.0")
 logger.info("Log level: %s", _LOG_LEVEL)
-logger.info("DB_HOST: %s", os.getenv("DB_HOST", "db"))
-logger.info("DB_PORT: %s", os.getenv("DB_PORT", "5432"))
 
 _active_requests = 0
 _active_requests_lock = asyncio.Lock()
 _POOL_METRICS_INTERVAL = int(os.getenv("POOL_METRICS_INTERVAL", "15"))
+
+
+def _audit(event: str, detail: str = "", extra: str = "") -> None:
+    _audit_logger.info("AUDIT event=%s detail=%s %s", event, detail, extra)
+
+
+_MAX_REQUEST_BODY_SIZE = int(os.getenv("MAX_REQUEST_BODY_SIZE", "65536"))
+
+
+class RequestBodySizeMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        content_length_str = request.headers.get("content-length")
+        if content_length_str:
+            try:
+                content_length = int(content_length_str)
+                if content_length > _MAX_REQUEST_BODY_SIZE:
+                    _audit(
+                        "request_body_too_large",
+                        f"Content-Length: {content_length}",
+                        f"path={request.url.path}",
+                    )
+                    return JSONResponse(
+                        status_code=413,
+                        content={
+                            "success": False,
+                            "message": f"Request body exceeds maximum size of {_MAX_REQUEST_BODY_SIZE} bytes.",
+                        },
+                    )
+            except (ValueError, TypeError):
+                pass
+        return await call_next(request)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -50,6 +80,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Cache-Control"] = "no-store"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         return response
 
 
@@ -165,7 +196,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    logger.error("Unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=True)
+    logger.error("Unhandled exception on %s %s", request.method, request.url.path, exc_info=True)
+    _audit("unhandled_exception", f"path={request.url.path} method={request.method}")
     return JSONResponse(
         status_code=500,
         content={"success": False, "message": "Internal server error. Please try again later."},
@@ -174,10 +206,11 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    logger.warning("Validation error on %s %s: %s", request.method, request.url.path, exc)
+    logger.warning("Validation error on %s %s: %s", request.method, request.url.path, str(exc)[:200])
+    _audit("validation_failure", f"path={request.url.path}")
     return JSONResponse(
         status_code=422,
-        content={"success": False, "message": "Invalid request body.", "details": exc.errors()},
+        content={"success": False, "message": "Invalid request body."},
     )
 
 
@@ -188,6 +221,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         content={"success": False, "message": exc.detail},
     )
 
+app.add_middleware(RequestBodySizeMiddleware)
 app.add_middleware(TimeoutMiddleware)
 app.add_middleware(MetricsMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)

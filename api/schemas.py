@@ -86,7 +86,7 @@ class AnalyzeResponse(BaseModel):
 class FollowupRequest(BaseModel):
     question: str = Field(..., min_length=2, max_length=1500)
     context: dict[str, Any] = Field(default_factory=dict)
-    session_token: str = ""
+    session_token: str = Field(default="", max_length=128)
 
     @field_validator("question")
     @classmethod
@@ -95,6 +95,13 @@ class FollowupRequest(BaseModel):
         if not cleaned:
             raise ValueError("Question cannot be empty.")
         return cleaned
+
+    @field_validator("session_token")
+    @classmethod
+    def validate_session_token(cls, value: str) -> str:
+        if value and not value.isalnum():
+            raise ValueError("session_token must be alphanumeric.")
+        return value
 
 
 class FollowupResponse(BaseModel):

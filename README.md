@@ -221,19 +221,25 @@ The benchmark serves as the project's regression gate. Any change to the retriev
 
 | Control | Implementation | Notes |
 |---|---|---|
-| API key authentication | `X-API-Key` header, verified via `secrets.compare_digest()` | Disabled with warning when `API_KEY` is unset (dev mode) |
+| API key authentication | `X-API-Key` header, verified via `secrets.compare_digest()` | Dev mode: disabled with warning. Production: **fails closed** with 503 if missing |
+| Fail-closed production auth | `verify_api_key()` returns 503 when `PRODUCTION=1` and `API_KEY` is unset | Double-gated: startup validation + per-request auth guard |
+| Audit logging | Structured `AUDIT` events emitted for auth success/failure, validation errors, oversized requests, unhandled exceptions | Separate `audit` logger; events include event type, detail, and request path |
+| Request body size limit | `RequestBodySizeMiddleware`, configurable `MAX_REQUEST_BODY_SIZE` (default 64KB) | Returns 413 with clear message on oversized payloads |
+| Secret redaction | No full request body logged in validation errors; `str(exc)` truncated to 200 chars; DB credentials never logged; `.env` excluded from Docker build context | |
 | Rate limiting | `slowapi`, configurable default 20/minute | Respects `X-Forwarded-For` for proxy environments |
 | CORS | Configurable `API_ALLOWED_ORIGINS` | Default restricts to `localhost:8080` |
 | Trusted hosts | Configurable `ALLOWED_HOSTS` allowlist | Default: `localhost,127.0.0.1,api,frontend` |
-| Security headers | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Cache-Control` | Applied via middleware on every response |
-| Input validation | Pydantic schemas with min/max length, custom validators | `description`: 10–3000 chars, `question`: 2–1500 chars |
+| Security headers | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Cache-Control`, `Permissions-Policy` | Applied via middleware on every response |
+| Input validation | Pydantic schemas with min/max length, custom validators | `description`: 10–3000 chars, `question`: 2–1500 chars, `session_token`: alphanumeric, max 128 chars |
+| Error response sanitization | Validation errors return generic `"Invalid request body."` — no Pydantic error details leaked to client | Full details kept in server logs only |
 | Request timeout | Configurable default 30s | Returns 504 on timeout |
 | Graceful shutdown | 25-second drain | Waits for active requests, logs progress, then closes DB connections |
 | DB connection pool | `pool_pre_ping`, `pool_recycle=3600`, size 10, overflow 10, timeout 30s | Pool metrics reported every 15s via daemon thread |
 | Production validation | `PRODUCTION=1` env var | Fails startup on missing/placeholder `API_KEY` or `DB_PASSWORD` |
-| Structured error handling | Global exception handler + validation handler + HTTP exception handler | All unhandled exceptions logged with traceback |
+| Dependency scanning | `scripts/scan-dependencies.py` wraps `pip-audit` for local vulnerability scanning | Requires `pip install pip-audit` |
+| Docker build safety | `.dockerignore` excludes `.env` and `.env.local` | Prevents secrets from being baked into Docker image layers |
 
-**Acknowledged gaps**: Credentials in `.env` are placeholders (must be changed for deployment); auth self-disables when `API_KEY` is empty; no CSRF protection; no request body size limit beyond Pydantic; the deprecated `context` field in follow-up requests accepts client-injected data. These are documented in `PRODUCTION_READINESS_AUDIT.md` with staged fix priorities.
+**Remaining acknowledged gaps**: Credentials in `.env` are placeholders (must be changed for deployment); no CSRF protection (API uses token auth, not cookies); deprecated `context` field in follow-up requests still accepted for legacy frontend compatibility. Full gap audit with fix priorities: `PRODUCTION_READINESS_AUDIT.md`.
 
 ---
 
