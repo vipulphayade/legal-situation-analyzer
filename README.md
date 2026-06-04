@@ -1,554 +1,274 @@
 # Legal Situation Analyzer
 
-Observable Hybrid RAG legal-analysis platform for Maharashtra Cooperative Housing Society bye-laws.
+Hybrid retrieval system for Maharashtra Cooperative Housing Society bye-laws. Analyzes housing society situations, maps them to the most relevant model bye-law, explains the match in plain English, and provides practical guidance.
 
-The project helps society members understand which Maharashtra Model Bye-law may apply to a situation, then explains the match in plain English, surfaces related rules, and offers follow-up guidance when the query is unclear or incomplete.
-
-This repository evolved from a basic legal retrieval prototype into a retrieval-oriented AI systems project with:
-
-- Hybrid retrieval
-- Applicability-aware filtering
-- Negative scoring
-- Topic drift prevention
-- Heuristic reranking
-- Follow-up context handling
-- Prometheus + Grafana observability
-- Dockerized deployment
-- Dual frontend workspaces
+**API version:** `4.0.0`
 
 ---
 
-## What the system does
+## Overview
 
-The platform is designed to answer legal-by-law questions in a grounded, retrieval-first way.
-
-Instead of acting like a generic chatbot, the system:
-
-1. understands the user’s housing society issue,
-2. retrieves the most relevant bye-law,
-3. checks whether the retrieved rule actually applies,
-4. penalizes weak or drifting matches,
-5. reranks the results,
-6. explains the legal match in simple language,
-7. tracks runtime behavior through observability metrics,
-8. supports follow-up questions using prior context.
+| Capability | Implementation |
+|---|---|
+| Retrieval | Hybrid: semantic (SentenceTransformers + pgvector) + keyword/topic scoring + cross-encoder reranker |
+| Query understanding | Topic detection (13 groups), intent classification (12 patterns), section-reference extraction |
+| Strategy selection | `EXACT_CITATION`, `KEYWORD_SEMANTIC`, or `HYBRID_RERANKER` per query |
+| Session store | PostgreSQL-backed, 5-minute TTL, shared across replicas |
+| Observability | 11 Prometheus metrics, provisioned Grafana dashboard |
+| Security | API key auth, rate limiting (slowapi), CORS, trusted host filtering, production env validation |
+| Frontend | Dual: legacy static UI (`/`) + React/TypeScript SPA (`/modern/`) behind NGINX |
 
 ---
 
-## Core architecture
+## Architecture
 
-```mermaid
-flowchart TD
-    U[User Browser] --> F[NGINX Frontend]
-
-    F -->|/api/analyze| A[FastAPI API]
-    F -->|/api/followup| A
-    F -->|/metrics| M[Prometheus Metrics]
-
-    A --> Q[Query Understanding]
-    Q --> H[Hybrid Retrieval]
-
-    H --> S[Sparse Retrieval / Keyword Matching]
-    H --> E[Semantic Retrieval / SentenceTransformers + pgvector]
-
-    S --> F1[Applicability Filtering]
-    E --> F1
-
-    F1 --> N[Negative Scoring]
-    N --> R[Reranking]
-    R --> G[Grounded Legal Response]
-    G --> O[Explainability + Follow-up Context]
-
-    A --> P[(PostgreSQL + pgvector)]
-    A --> X[Prometheus Metrics]
-    X --> GRAF[Grafana Dashboards]
+```
+Browser ──► NGINX (:8080)
+              ├── /api/* ──► FastAPI (:8000)
+              │                 POST /analyze     (API key + rate-limited)
+              │                 POST /followup    (API key + rate-limited)
+              │                 GET  /health
+              │                 GET  /metrics     (API key)
+              ├── /modern/* ──► React SPA
+              └── /* ──► Legacy static UI
 ```
 
----
+**Retrieval pipeline:**
 
-## Frontend modes
-
-The application currently exposes two UI workspaces:
-
-- `/` → classic legal workspace
-- `/modern/` → modern operational workspace
-
-### Classic UI
-The classic UI is the legal-editorial workspace inspired by the v9 reference design.  
-It is intended to feel like a dense legal reasoning surface with structured cards, sections, and retrieval-oriented guidance.
-
-### Modern UI
-The modern UI is a cleaner operational workspace focused on interaction quality, routing, and production deployment stability.
-
-Both frontends share the same backend APIs and retrieval system.
-
----
-
-## Key features
-
-### Retrieval and grounding
-- Hybrid RAG retrieval pipeline
-- SentenceTransformer embeddings
-- pgvector semantic search
-- keyword / topic retrieval
-- structured legal metadata
-- grounded explanation generation
-- related-bye-law suggestions
-
-### Retrieval quality controls
-- applicability-aware filtering
-- negative scoring for weak matches
-- topic drift prevention
-- heuristic reranking
-- follow-up relationship guardrails
-
-### Explainability
-- primary bye-law
-- explanation
-- why it applies
-- practical guidance
-- related rules
-- confidence score
-- conditions required
-- possible challenges
-- recommended next steps
-- documents to collect
-- disclaimer
-
-### Operational maturity
-- Prometheus metrics
-- Grafana dashboards
-- Docker Compose deployment
-- nginx routing
-- security headers
-- rate limiting
-- trusted host filtering
-- startup dataset sanity checks
-
----
-
-## Retrieval workflow
-
-```text
-User query
-↓
-Query understanding
-↓
-Hybrid retrieval
-  ├─ Sparse / keyword retrieval
-  └─ Semantic / embedding retrieval
-↓
-Applicability filtering
-↓
-Negative scoring
-↓
-Topic drift prevention
-↓
-Heuristic reranking
-↓
-Grounded legal response generation
-↓
-Follow-up handling
-↓
-Prometheus metrics
-↓
-Grafana dashboards
+```
+Query ──► Query Understanding ──► Exact citation? ──► Direct DB lookup ──► Response
+                                   │
+                                   └─ General query ──► Fetch all candidates
+                                                          │
+                                                          ├─ Score: semantic + lexical + topic bias + exact bonus
+                                                          ├─ Rerank top-20 (cross-encoder)
+                                                          ├─ Merge reranked + heuristic order
+                                                          ├─ Confidence: score×0.85 + gap×0.15 + consensus_bonus
+                                                          └─ Clarification tiers: <0.35 / <0.55 / <0.65 / >=0.65
 ```
 
-### What the scoring layer does
-The scoring layer combines multiple signals:
+**Query understanding** classifies every query before retrieval:
 
-- semantic similarity
-- keyword / full-text style overlap
-- actor relevance
-- issue relevance
-- procedural relevance
-- scenario relevance
-- drift penalty
-- applicability penalty
+- **13 topic groups**: `agm`, `parking`, `maintenance`, `transfer`, `redevelopment`, `audit`, `membership`, `complaint`, `committee`, `elections`, `recovery`, `defaulters`, `property`
+- **Intent patterns**: permission, prohibition, eligibility, obligation, violation, procedure, deadline, fee, responsibility, rights, dispute, information
+- **Section-reference extraction**: `detect_bye_law_reference()` matches `bye-law 126`, `section 94(3)`, `bylaw 12(i)` (including Roman numerals). Exact references bypass scoring.
+- **Clarification logic** (4 tiers):
 
-Weak or irrelevant candidates are penalized instead of being treated as equally valid matches.
-
----
-
-## Query understanding and follow-up behavior
-
-The backend has a light query-understanding layer that detects broad issue families such as:
-
-- AGM / general body
-- parking
-- maintenance / sinking fund
-- transfer / nomination
-- audit
-- redevelopment
-- membership
-- complaints
-
-The follow-up flow is not treated as a replacement for retrieval.  
-It is additive context that helps the system refine an already retrieved answer.
-
-The follow-up guard prevents unrelated drift and limits repeated follow-up loops.
+| Range | Behavior |
+|-------|----------|
+| < 0.35 | Always clarify (NO_MATCH) |
+| 0.35–0.55 | Clarify (LOW confidence) |
+| 0.55–0.65 | Clarify only if broad or low-signal |
+| >= 0.65 | No clarification (MEDIUM/HIGH) |
 
 ---
 
-## API endpoints
+## Repository Structure
 
-### `POST /api/analyze`
-Analyzes a housing society situation and returns the most relevant bye-law and explanation.
-
-Example:
-
-```json
-{
-  "description": "Our society used sinking fund for routine maintenance without a structural report or General Body approval."
-}
 ```
-
-### `POST /api/followup`
-Answers a follow-up question using the previous answer context.
-
-Example:
-
-```json
-{
-  "question": "Does this need approval from all members?",
-  "context": { "...": "previous analyze response" }
-}
-```
-
-### `GET /health`
-Simple backend health check.
-
-### `GET /metrics`
-Prometheus-compatible metrics endpoint.
-
----
-
-## Observability
-
-The project now includes retrieval observability through Prometheus and Grafana.
-
-### Metrics exposed by the backend
-- API request count
-- API request latency
-- retrieval latency
-- reranker latency
-- negative score count
-- applicability filter rejection count
-- retrieval failure count
-
-### Why observability matters here
-This is not generic server monitoring.  
-The main goal is to understand retrieval behavior:
-
-- Are the right laws being found?
-- Are weak matches being rejected?
-- Is the reranker improving the result?
-- Is the retrieval pipeline slowing down?
-- Are follow-ups producing drift?
-
-That is the important observability story for this project.
-
----
-
-## Dataset
-
-The current dataset is an official-text-first hybrid dataset for Maharashtra Cooperative Housing Society bye-laws.
-
-### Dataset characteristics
-- 229 bylaw records
-- Maharashtra, India jurisdiction
-- structured metadata
-- retrieval-friendly textual fields
-- explanation and guidance fields
-- compatibility with the existing schema
-- source-grounded legal text where available
-
-### Main sources
-- Mysocietyclub bye-laws pages
-- Sahakarayukta Maharashtra source material
-
-### Why this dataset is important
-The dataset is designed to reduce boilerplate contamination and preserve legally useful fields for retrieval and explanation.
-
----
-
-## Data model
-
-### `bylaws`
-Core fields include:
-
-- `section`
-- `subsection`
-- `title`
-- `chapter`
-- `topic`
-- `topic_group`
-- `issue_category`
-- `keywords`
-- `technical_terms`
-- `layman_keywords`
-- `official_excerpt`
-- `normalized_legal_text`
-- `source_grounded_official_text`
-- `retrieval_text`
-- `content`
-- `explanation`
-- `plain_english`
-- `why_this_applies`
-- `real_world_example`
-- `common_disputes`
-- `example_queries`
-- `applicable_when`
-- `trigger_conditions`
-- `not_applicable_when`
-- `issue_patterns`
-- `recommended_next_steps`
-- `documents_to_collect`
-- `authority_to_approach`
-- `embedding`
-
-### `bylaw_relations`
-Used to connect related rules:
-
-- `source_section`
-- `source_subsection`
-- `target_section`
-- `target_subsection`
-
-### `query_logs`
-The backend creates a query log table to track retrieval behavior and returned rules.
-
----
-
-## Project structure
-
-```text
 legal-situation-analyzer/
-├── api/
-│   ├── applicability_filter.py
-│   ├── bylaw_seed.py
-│   ├── cache_service.py
-│   ├── context_classifier.py
-│   ├── context_memory.py
-│   ├── database.py
-│   ├── dataset_verifier.py
-│   ├── drift_prevention.py
-│   ├── embeddings.py
-│   ├── explainability.py
-│   ├── followup_guard.py
-│   ├── hybrid_retrieval.py
-│   ├── import_service.py
-│   ├── main.py
-│   ├── metrics.py
-│   ├── prompt_builder.py
-│   ├── query_understanding.py
-│   ├── reranker.py
-│   ├── schemas.py
-│   ├── scoring.py
-│   ├── search.py
-│   └── ...
-├── dataset/
-│   └── bylaws_dataset.json
-├── database/
-│   └── init.sql
-├── docker/
-│   ├── Dockerfile.api
-│   ├── Dockerfile.database
-│   └── Dockerfile.frontend
-├── frontend/
-│   ├── index.html
-│   ├── nginx.conf
-│   ├── script.js
-│   └── styles.css
-├── frontend-modern/
-│   ├── src/
-│   ├── public/
-│   ├── vite.config.ts
-│   ├── package.json
-│   └── ...
-├── grafana/
-│   └── provisioning/
-├── kubernetes/
-├── prometheus/
-├── docker-compose.yml
+├── api/                   # 15 app modules + 6 test files (FastAPI)
+├── dataset/               # 247-record, 57-field canonical dataset
+├── database/              # PostgreSQL + pgvector init schema
+├── docker/                # Dockerfiles (api, database, frontend)
+├── frontend/              # Legacy static UI
+├── frontend-modern/       # React/TypeScript SPA
+├── scripts/               # 53 dataset extraction and analysis tools
+├── tests/                 # Benchmark suites and eval runners
+├── alembic/               # Database migrations
+├── prometheus/            # prometheus.yml
+├── grafana/               # Provisioned dashboards and datasource
+├── kubernetes/            # 4 standalone deployment manifests
+├── docs/                  # Architecture notes, audit reports, action plans
+├── docker-compose.yml     # Primary deployment definition
 └── README.md
 ```
 
 ---
 
-## Deployment
+## Dataset
 
-### Local development / production-like run
+**247 records, 57 fields** — Maharashtra Cooperative Housing Society Model Bye-laws. Source-grounded legal text with explanations, keywords, topic groups, and guidance fields.
 
-```bash
+Representative fields: `section`, `subsection`, `title`, `chapter`, `topic`, `topic_group`, `keywords`, `technical_terms`, `official_legal_text`, `source_grounded_official_text`, `retrieval_text`, `plain_english`, `why_this_applies`, `real_world_examples`, `common_disputes`, `conditions_required`, `documents_to_check`, `member_rights`, `official_grounding_status`, `primary_retrieval_text`.
+
+### Startup validation
+
+On startup the backend runs five sanity checks against the database:
+
+| Check | Description |
+|-------|-------------|
+| Section continuity | Detects missing numeric section numbers |
+| Subsection gaps | Detects missing subsection letters (a, b, c, ...) |
+| Duplicates | Detects duplicate section/subsection pairs |
+| Missing text | Detects empty or too-short content fields |
+| Missing embeddings | Detects rows without embedding vectors |
+
+Also enforces configurable `MINIMUM_DATASET_SIZE` and verifies embedding completeness and structural integrity before declaring the dataset ready.
+
+---
+
+## Infrastructure
+
+### Docker Compose (primary deployment)
+
+```
 docker compose up --build
 ```
 
-This brings up the core stack:
+| Service | Image | Port | Depends on |
+|---------|-------|------|------------|
+| `db` | Custom (PostgreSQL 16 + pgvector) | — | — |
+| `api` | Custom (Python 3.12 + FastAPI) | `:8000` | `db` healthy |
+| `frontend` | Custom (NGINX 1.27) | `:8080` | `api` healthy |
+| `prometheus` | `prom/prometheus:v2.55.1` | `:9090` | `api` healthy |
+| `grafana` | `grafana/grafana-oss:11.3.0` | `:3000` | `prometheus` started |
 
-- PostgreSQL database
-- FastAPI backend
-- classic frontend / nginx
-- Prometheus
-- Grafana
+### URLs
 
-### Frontend URLs
-- `http://localhost:8080/` → classic workspace
-- `http://localhost:8080/modern/` → modern workspace
+| Address | What |
+|---------|------|
+| `http://localhost:8080/` | Legacy frontend |
+| `http://localhost:8080/modern/` | Modern frontend |
+| `http://localhost:8000/health` | Health check |
+| `http://localhost:8000/metrics` | Prometheus metrics |
+| `http://localhost:9090/` | Prometheus UI |
+| `http://localhost:3000/` | Grafana (admin / admin) |
 
-### Observability URLs
-- `http://localhost:9090/` → Prometheus
-- `http://localhost:3000/` → Grafana
+### Kubernetes
 
-### Backend URLs
-- `http://localhost:8000/health`
-- `http://localhost:8000/metrics`
-- `http://localhost:8000/api/analyze`
-- `http://localhost:8000/api/followup`
+Four standalone manifests in `kubernetes/`:
+- `api-deployment.yaml` — FastAPI deployment with health probes
+- `frontend-deployment.yaml` — NGINX deployment serving both UIs
+- `postgres-deployment.yaml` — PostgreSQL + pgvector StatefulSet
+- `app-secret.yaml` — Secret template for DB credentials and API key
 
----
+Not currently connected to CI/CD. Ready for manual `kubectl apply -f kubernetes/`.
 
-## Docker architecture
+### Local development
 
-The Docker Compose stack contains:
-
-- `db`
-- `api`
-- `frontend`
-- `prometheus`
-- `grafana`
-
-The frontend nginx container serves both UI modes, while the API container serves retrieval and metrics endpoints.
-
----
-
-## Kubernetes
-
-The repository also includes Kubernetes manifests for deployment-oriented workflows.
-
-Example application resources:
-- API deployment
-- frontend deployment
-- PostgreSQL deployment
-- app secret configuration
-
-Kubernetes support is present, but the main day-to-day workflow is centered on Docker Compose for local and integrated deployment.
-
----
-
-## Version evolution
-
-### Early versions (v1–v8)
-The project began as a simpler legal lookup / AI-assisted analysis experiment with basic retrieval and output generation.
-
-### v9
-The v9 frontend established the strongest editorial legal-workspace identity:
-- dense layout
-- serif typography
-- structured reasoning cards
-- better legal presentation
-- better information hierarchy
-
-### v10–v14
-This phase focused on frontend experimentation and workspace refinement:
-- more modern workspace structure
-- React and Tailwind integration
-- layout iterations
-- retrieval panel composition
-- infrastructure stabilization
-
-### v15–v16
-This phase matured the backend retrieval architecture:
-- Hybrid RAG
-- semantic + keyword retrieval
-- applicability-aware filtering
-- negative scoring
-- drift prevention
-- heuristic reranking
-- follow-up guardrails
-- initial observability direction
-
-### v17
-The current version becomes an observable legal AI platform:
-- Prometheus metrics
-- Grafana dashboards
-- retrieval latency visibility
-- scoring visibility
-- retrieval failure visibility
-- Dockerized operational stack
-- dual frontend support
-- stronger deployment and runtime maturity
-
----
-
-## What v17 improved over earlier versions
-
-### Compared with early versions
-- Much better retrieval grounding
-- Better legal applicability control
-- More structured responses
-- Better legal dataset handling
-
-### Compared with v9
-- Much stronger backend reasoning and retrieval pipeline
-- More operational maturity
-- Better observability
-- Better deployment support
-
-### Compared with v15–v16
-- More complete metrics stack
-- Better runtime visibility
-- More production-minded architecture
-- Better documentation potential
-
----
-
-## Local dataset import
-
-The dataset can be imported through the existing importer scripts.
-
-Example commands:
-
-```bash
-python import_bylaws.py
-python import_bylaws.py --dataset dataset/bylaws_dataset.json --replace-existing
-python import_bylaws.py --dataset custom_bylaws.csv --replace-existing
-```
-
-For CSV imports, `conditions_required` uses:
-
-```text
-Requirement 1::Plain explanation 1|Requirement 2::Plain explanation 2
-```
-
----
-
-## Running the system
-
-### First-time setup
 ```bash
 docker compose up --build
+
+# Manual dataset import (outside Docker)
+python scripts/import_bylaws.py
+python scripts/import_bylaws.py --dataset dataset/bylaws_dataset.json --replace-existing
+
+# Run tests
+python -m pytest api/ -v
 ```
 
-### If you want a clean restart with database rebuild
-```bash
-docker compose down -v
-docker compose up --build
-```
+---
 
-### Validate backend manually
-```bash
-curl http://localhost:8000/health
-curl http://localhost:8000/metrics
-```
+## Observability
+
+### Prometheus metrics (11 metric families)
+
+| Metric | Type | Purpose |
+|--------|------|---------|
+| `legal_analyzer_api_requests_total` | Counter | Request count by method, path, status |
+| `legal_analyzer_api_request_duration_seconds` | Histogram | API latency distribution |
+| `legal_analyzer_retrieval_duration_seconds` | Histogram | Retrieval pipeline latency |
+| `legal_analyzer_reranker_duration_seconds` | Histogram | Cross-encoder latency |
+| `legal_analyzer_db_pool` | Gauge | Pool size / checked-in / overflow (reported every 15s) |
+| `legal_analyzer_negative_score_total` | Counter | Candidates with non-positive scores |
+| `legal_analyzer_retrieval_failures_total` | Counter | Failed or no-match retrievals |
+| `legal_analyzer_candidate_count` | Histogram | Candidate pool size distribution |
+| `legal_analyzer_top_score` | Histogram | Best heuristic score before reranking |
+| `legal_analyzer_final_confidence` | Histogram | Final confidence returned to client |
+| `legal_analyzer_clarification_total` | Counter | Clarification needed vs not |
+
+Latency buckets: `[0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, 15.0, 30.0]`
+
+### Grafana
+
+Provisioned dashboard at `grafana/dashboards/legal-analyzer.json` with auto-configured Prometheus datasource. Tracks retrieval latency, reranker performance, pool health, confidence distribution, and error rates.
+
+---
+
+## Benchmark
+
+Verified against `tests/retrieval_benchmark.json` (99 queries, Docker + PostgreSQL + reranker):
+
+| Metric | Value |
+|--------|-------|
+| Top-1 accuracy | 75.8% |
+| Top-3 accuracy | 81.8% |
+| Top-5 accuracy | 92.9% |
+| MRR | 0.8095 |
+| Errors | 0 |
+
+**Run:** `python api/_run_benchmark.py` (requires PostgreSQL)
+
+The benchmark serves as the project's regression gate. Any retrieval change must maintain or improve these numbers against the same 99-query suite before being considered safe to merge.
+
+---
+
+## Security & Production Hardening
+
+| Feature | Detail | Engineering notes |
+|---------|--------|------------------|
+| API key auth | `X-API-Key` via `auth.py` | `secrets.compare_digest()` for timing-safe comparison. Disabled if `API_KEY` unset. |
+| Rate limiting | `slowapi`, default 20/min | Respects `X-Forwarded-For` for proxy environments |
+| CORS | Configurable origins | Default restricts to `localhost:8080` |
+| Trusted hosts | Configurable allowlist | Default `localhost,127.0.0.1,api,frontend` |
+| Security headers | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Cache-Control` | Applied via middleware on every response |
+| Production env validation | `PRODUCTION=1` | Fails startup on missing/placeholder `API_KEY` or `DB_PASSWORD` |
+| Graceful shutdown | 25-second drain | Waits for active requests, then closes DB connections |
+| DB connection pool | Size 10, overflow 10, timeout 30s, recycle 3600s | Pool metrics reported every 15s via daemon thread |
+| Request timeout | Default 30s, configurable | Returns 504 on timeout |
+
+---
+
+## Testing
+
+74 collected tests across 6 files:
+
+| File | Tests | Focus |
+|------|-------|-------|
+| `test_import.py` | 14 | Dataset import, field extraction, fallback behavior |
+| `test_fixes.py` | 43 | Regex, confidence labels, clarification tiers, reranker integration |
+| `test_auth.py` | 1 | API key rejection |
+| `test_health.py` | 1 | Health endpoint DB connectivity |
+| `test_embeddings.py` | 2 | Embedding model loading |
+| `test_session.py` | 1 | Session context key verification |
+
+60 pass, 6 require PostgreSQL, 8 skipped without `--reranker`.
+
+---
+
+## Version History
+
+| Range | Focus |
+|-------|-------|
+| v1–v9 | Foundational legal retrieval prototypes, editorial workspace identity |
+| v10–v14 | Frontend modernization (React, Tailwind), UX iterations |
+| v15–v17 | Hybrid retrieval, cross-encoder reranking, query understanding, Prometheus + Grafana observability |
+| v18–v20 | Production hardening, benchmarking discipline, deployment maturity, retrieval quality improvements |
+
+---
+
+## Known Limitations
+
+- Cross-encoder adds ~200–220ms CPU latency per query (`cross-encoder/ms-marco-MiniLM-L-6-v2`)
+- 6 integration tests require a running PostgreSQL database
+- Dataset covers Maharashtra Model Bye-laws only (not registered bye-laws of individual societies)
+- Kubernetes manifests are standalone (not wired to CI/CD)
+- Follow-up context expires after 5 minutes
+
+---
+
+## Future Work
+
+- **Expanded query-understanding coverage:** Add topic groups for financial governance, dispute resolution, member rights
+- **Stratified benchmark suite:** Organize the 99-query benchmark by topic group for per-topic regression detection
+- **Automated CI benchmark gate:** Run benchmark on every retrieval PR; fail if Top-1 or MRR drops below locked baseline
+- **Dataset augmentation pipeline:** Formalize scraped-HTML → extracted verbatim → dataset merge into a repeatable, versioned workflow with diff review
+- **Reranker model evaluation:** Benchmark alternative cross-encoder models against the 99-query suite
+- **Production readiness automation:** Convert `PRODUCTION_READINESS_AUDIT.md` into a runnable startup assertion
 
 ---
 
 ## Disclaimer
 
-This system is built for informational legal guidance and retrieval assistance.
-
-It does not replace registered bye-laws, legal counsel, or society-specific official records.
-
-Always verify against the society’s registered bye-laws and applicable statutory sources.
+This system provides informational legal guidance and retrieval assistance. It does not replace registered bye-laws, legal counsel, or society-specific official records. Always verify against the society's registered bye-laws and applicable statutory sources.
