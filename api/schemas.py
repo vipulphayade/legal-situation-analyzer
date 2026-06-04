@@ -80,11 +80,13 @@ class AnalyzeResponse(BaseModel):
     recommended_next_steps: list[str] = Field(default_factory=list)
     documents_to_collect: list[str] = Field(default_factory=list)
     possible_authorities: list[str] = Field(default_factory=list)
+    session_token: str = ""
 
 
 class FollowupRequest(BaseModel):
     question: str = Field(..., min_length=2, max_length=1500)
-    context: dict[str, Any]
+    context: dict[str, Any] = Field(default_factory=dict)
+    session_token: str = ""
 
     @field_validator("question")
     @classmethod

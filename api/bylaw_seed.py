@@ -786,9 +786,3 @@ def build_dataset() -> list[dict]:
         dataset.append(record)
     return dataset
 
-
-def write_dataset_json(path: str | Path) -> Path:
-    output_path = Path(path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(build_dataset(), indent=2), encoding="utf-8")
-    return output_path

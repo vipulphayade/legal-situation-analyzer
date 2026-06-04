@@ -1,0 +1,737 @@
+[
+  {
+    "query": "The society did not hold the AGM this year. Can the members demand a meeting?",
+    "expected_sections": [
+      "94",
+      "95",
+      "96"
+    ],
+    "topic": "meetings_resolutions"
+  },
+  {
+    "query": "What is the deadline to hold the annual general body meeting after the end of the financial year?",
+    "expected_sections": [
+      "94"
+    ],
+    "topic": "meetings_resolutions"
+  },
+  {
+    "query": "What business is transacted at the annual general body meeting?",
+    "expected_sections": [
+      "95"
+    ],
+    "topic": "meetings_resolutions"
+  },
+  {
+    "query": "When can a special general meeting be called?",
+    "expected_sections": [
+      "96"
+    ],
+    "topic": "meetings_resolutions"
+  },
+  {
+    "query": "How many days notice is required for a general body meeting?",
+    "expected_sections": [
+      "98",
+      "99"
+    ],
+    "topic": "meetings_resolutions"
+  },
+  {
+    "query": "What is the quorum requirement for a general body meeting?",
+    "expected_sections": [
+      "100"
+    ],
+    "topic": "meetings_resolutions"
+  },
+  {
+    "query": "The AGM was adjourned because there was no quorum. What happens next?",
+    "expected_sections": [
+      "100",
+      "101"
+    ],
+    "topic": "meetings_resolutions"
+  },
+  {
+    "query": "Can the chairman postpone a general meeting if the agenda cannot be completed?",
+    "expected_sections": [
+      "102",
+      "103"
+    ],
+    "topic": "meetings_resolutions"
+  },
+  {
+    "query": "How are minutes of the general body meeting recorded?",
+    "expected_sections": [
+      "108"
+    ],
+    "topic": "meetings_resolutions"
+  },
+  {
+    "query": "The managing committee elections are due. What is the procedure for electing the committee?",
+    "expected_sections": [
+      "115"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "How are office bearers like chairman and secretary elected after the committee is formed?",
+    "expected_sections": [
+      "125",
+      "115"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "Can a person who has been disqualified from being a committee member stand for election?",
+    "expected_sections": [
+      "117",
+      "116"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "What is the term of office for an elected managing committee?",
+    "expected_sections": [
+      "121"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "What is the procedure for the first meeting of the newly elected committee?",
+    "expected_sections": [
+      "122"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "Can the society appoint an expert director or a professional to the managing committee?",
+    "expected_sections": [
+      "114",
+      "118"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "What is the strength of the managing committee? How many members should it have?",
+    "expected_sections": [
+      "114"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "Who is disqualified from being elected or continuing as a committee member?",
+    "expected_sections": [
+      "117"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "How is the managing committee constituted after elections?",
+    "expected_sections": [
+      "118"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "A committee member has ceased to be a member. What happens next?",
+    "expected_sections": [
+      "119"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "Can a committee member vote on a matter where they have a personal interest?",
+    "expected_sections": [
+      "120"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "What is the quorum for a managing committee meeting?",
+    "expected_sections": [
+      "126"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "How many committee meetings should be held every month?",
+    "expected_sections": [
+      "127"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "A committee member has resigned. Can the vacancy be filled by co-option?",
+    "expected_sections": [
+      "128",
+      "130"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "How much notice is required for a committee meeting?",
+    "expected_sections": [
+      "132"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "Who presides over committee meetings?",
+    "expected_sections": [
+      "133"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "How are decisions taken in committee meetings? Is it one member one vote?",
+    "expected_sections": [
+      "134",
+      "106"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "What are the powers and duties of the managing committee?",
+    "expected_sections": [
+      "138"
+    ],
+    "topic": "committee_governance"
+  },
+  {
+    "query": "Who can apply for membership of the society? What are the eligibility criteria for individuals?",
+    "expected_sections": [
+      "17"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "Can a minor or a person of unsound mind become a member of the society?",
+    "expected_sections": [
+      "17"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "Can a company or corporate body become a member of the society?",
+    "expected_sections": [
+      "18"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What are the conditions for associate membership?",
+    "expected_sections": [
+      "19"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What is a nominal member and what are the conditions for nominal membership?",
+    "expected_sections": [
+      "20"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What is the procedure for disposal of a membership application?",
+    "expected_sections": [
+      "21"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "How does a member resign from the society?",
+    "expected_sections": [
+      "27"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "Can a member resign if they have outstanding dues payable to the society?",
+    "expected_sections": [
+      "27"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What happens when a member is expelled? Can they be re-admitted later?",
+    "expected_sections": [
+      "50",
+      "51",
+      "55"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "I want to transfer my flat to a buyer. What is the procedure for transfer of shares?",
+    "expected_sections": [
+      "38",
+      "39"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What documents are required from the transferor and transferee for a share transfer?",
+    "expected_sections": [
+      "38"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "Can the committee refuse a transfer application?",
+    "expected_sections": [
+      "39"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "How long does the society have to process a transfer application?",
+    "expected_sections": [
+      "39"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "Is a No Objection Certificate required for transfer of shares?",
+    "expected_sections": [
+      "38"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What happens if a transfer is done without society approval?",
+    "expected_sections": [
+      "39"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "How are share certificates issued to members?",
+    "expected_sections": [
+      "9",
+      "10"
+    ],
+    "topic": "finance_accounts"
+  },
+  {
+    "query": "I want to nominate someone for my flat. What is the procedure for nomination?",
+    "expected_sections": [
+      "32",
+      "33"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "Can I revoke or change my earlier nomination?",
+    "expected_sections": [
+      "32",
+      "33"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What happens to my shares and flat after my death if I have a nominee?",
+    "expected_sections": [
+      "34",
+      "36"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "If I die without a nominee, who gets the flat and shares?",
+    "expected_sections": [
+      "35",
+      "37"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What is the procedure for allotment of parking slots in the society?",
+    "expected_sections": [
+      "78",
+      "80",
+      "82"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "Can the committee restrict how parking slots are used?",
+    "expected_sections": [
+      "78"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "How are parking slots marked and allotted in the stilt area?",
+    "expected_sections": [
+      "79"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "Who is eligible for a parking slot or stilt parking?",
+    "expected_sections": [
+      "80"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "There are more members than parking slots. How should parking be allocated?",
+    "expected_sections": [
+      "81"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "What charges are payable for parking of vehicles in the society?",
+    "expected_sections": [
+      "83"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "Can visitors or non-members park their vehicles in the society premises?",
+    "expected_sections": [
+      "84"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "What is included in the maintenance charges payable by members?",
+    "expected_sections": [
+      "65",
+      "66"
+    ],
+    "topic": "charges_fees"
+  },
+  {
+    "query": "How are society charges shared among members?",
+    "expected_sections": [
+      "67"
+    ],
+    "topic": "charges_fees"
+  },
+  {
+    "query": "What repairs and maintenance must the society carry out at its own cost?",
+    "expected_sections": [
+      "68",
+      "159"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "The society has not done repairs to the building. What can members do?",
+    "expected_sections": [
+      "68",
+      "156",
+      "157"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "Who is responsible for repairs inside my flat?",
+    "expected_sections": [
+      "159"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "Can the society create a repairs and maintenance fund?",
+    "expected_sections": [
+      "13",
+      "14"
+    ],
+    "topic": "finance_accounts"
+  },
+  {
+    "query": "What is a sinking fund and how is it created?",
+    "expected_sections": [
+      "13"
+    ],
+    "topic": "finance_accounts"
+  },
+  {
+    "query": "How can the sinking fund be utilised by the society?",
+    "expected_sections": [
+      "14"
+    ],
+    "topic": "finance_accounts"
+  },
+  {
+    "query": "What is the procedure for appointment of auditors for the society?",
+    "expected_sections": [
+      "151"
+    ],
+    "topic": "finance_accounts"
+  },
+  {
+    "query": "What books of account and registers must the society maintain?",
+    "expected_sections": [
+      "141",
+      "142"
+    ],
+    "topic": "finance_accounts"
+  },
+  {
+    "query": "What is the cash on hand limit for the society?",
+    "expected_sections": [
+      "144"
+    ],
+    "topic": "finance_accounts"
+  },
+  {
+    "query": "What payments must be made by cheque or approved banking mode?",
+    "expected_sections": [
+      "145"
+    ],
+    "topic": "finance_accounts"
+  },
+  {
+    "query": "When should the accounts be finalised every year?",
+    "expected_sections": [
+      "146"
+    ],
+    "topic": "finance_accounts"
+  },
+  {
+    "query": "Must the secretary produce records to the auditors?",
+    "expected_sections": [
+      "152"
+    ],
+    "topic": "finance_accounts"
+  },
+  {
+    "query": "What is an audit rectification report and who prepares it?",
+    "expected_sections": [
+      "153"
+    ],
+    "topic": "finance_accounts"
+  },
+  {
+    "query": "What is the procedure for redevelopment of the society building?",
+    "expected_sections": [
+      "175"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "The society is planning redevelopment. What are the rules regarding developer selection and member consent?",
+    "expected_sections": [
+      "175"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "Can redevelopment be done without following the 2009 directives?",
+    "expected_sections": [
+      "175"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "What repairs and redevelopment work can the committee undertake?",
+    "expected_sections": [
+      "158",
+      "175"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "What happens to the authorised share capital if members increase after redevelopment?",
+    "expected_sections": [
+      "175"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "What steps are needed for conveyance or deemed conveyance of the society property?",
+    "expected_sections": [
+      "154"
+    ],
+    "topic": "property_management"
+  },
+  {
+    "query": "A member has not paid maintenance charges for several months. What action can the society take?",
+    "expected_sections": [
+      "69",
+      "70",
+      "71"
+    ],
+    "topic": "charges_fees"
+  },
+  {
+    "query": "What interest can be charged on delayed payment of society charges?",
+    "expected_sections": [
+      "71"
+    ],
+    "topic": "charges_fees"
+  },
+  {
+    "query": "How should the society review cases of default in payment of charges?",
+    "expected_sections": [
+      "70"
+    ],
+    "topic": "charges_fees"
+  },
+  {
+    "query": "Can the society deduct unpaid dues from a member's share value?",
+    "expected_sections": [
+      "74",
+      "69"
+    ],
+    "topic": "charges_fees"
+  },
+  {
+    "query": "A member has not paid charges. Can the society refuse to accept their resignation?",
+    "expected_sections": [
+      "27",
+      "70"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "How do I file a complaint against the society or committee?",
+    "expected_sections": [
+      "172",
+      "173"
+    ],
+    "topic": "disputes_complaints"
+  },
+  {
+    "query": "What is the procedure for the committee to act on a complaint application?",
+    "expected_sections": [
+      "173",
+      "49"
+    ],
+    "topic": "disputes_complaints"
+  },
+  {
+    "query": "The committee did not act on my complaint. Can I approach the Registrar?",
+    "expected_sections": [
+      "174"
+    ],
+    "topic": "disputes_complaints"
+  },
+  {
+    "query": "Can I take the society to the co-operative court if my complaint is not resolved?",
+    "expected_sections": [
+      "174"
+    ],
+    "topic": "disputes_complaints"
+  },
+  {
+    "query": "What are the penalties for breach of bye-laws?",
+    "expected_sections": [
+      "165"
+    ],
+    "topic": "disputes_complaints"
+  },
+  {
+    "query": "Can members inspect society documents and get copies?",
+    "expected_sections": [
+      "23",
+      "22"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What fees are payable for obtaining copies of society documents?",
+    "expected_sections": [
+      "171"
+    ],
+    "topic": "charges_fees"
+  },
+  {
+    "query": "A member is causing nuisance and annoyance to other residents. What can the committee do?",
+    "expected_sections": [
+      "49",
+      "50"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "The notice board is not being updated. What does the bye-law say about it?",
+    "expected_sections": [
+      "164"
+    ],
+    "topic": "preliminary_general"
+  },
+  {
+    "query": "How can the society recover dues from a defaulter member?",
+    "expected_sections": [
+      "69",
+      "70",
+      "71"
+    ],
+    "topic": "charges_fees"
+  },
+  {
+    "query": "A member has not paid maintenance charges for six months. Can we charge interest?",
+    "expected_sections": [
+      "71",
+      "69"
+    ],
+    "topic": "charges_fees"
+  },
+  {
+    "query": "What is the procedure for reviewing default cases in the committee meeting?",
+    "expected_sections": [
+      "70"
+    ],
+    "topic": "charges_fees"
+  },
+  {
+    "query": "Can the society deny services to a member who has not paid their dues?",
+    "expected_sections": [
+      "69",
+      "70"
+    ],
+    "topic": "charges_fees"
+  },
+  {
+    "query": "What charges make up the total society charges payable by each member?",
+    "expected_sections": [
+      "65",
+      "66"
+    ],
+    "topic": "charges_fees"
+  },
+  {
+    "query": "Can an expelled member be re-admitted to the society later?",
+    "expected_sections": [
+      "55"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What are the grounds on which a member can be expelled from the society?",
+    "expected_sections": [
+      "50"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What is the procedure for expelling a member from the society?",
+    "expected_sections": [
+      "51"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What happens to the shares of a member who has been expelled?",
+    "expected_sections": [
+      "51",
+      "54"
+    ],
+    "topic": "membership_transfer"
+  },
+  {
+    "query": "What is the procedure for exchange of flats between two members?",
+    "expected_sections": [
+      "41",
+      "42"
+    ],
+    "topic": "membership_transfer"
+  }
+]

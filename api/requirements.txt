@@ -7,6 +7,4 @@ sentence-transformers==3.4.1
 pgvector==0.3.6
 slowapi==0.1.9
 prometheus-client==0.22.1
-
-redis
-rapidfuzz
+alembic==1.15.2

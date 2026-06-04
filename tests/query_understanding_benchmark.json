@@ -1,0 +1,292 @@
+[
+  {
+    "query": "Can society appoint expert director?",
+    "intent": "authority",
+    "actor": "society",
+    "action": "appoint",
+    "subject": "expert director",
+    "topic": "general",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Can committee remove secretary?",
+    "intent": "authority",
+    "actor": "committee",
+    "action": "remove",
+    "subject": "office bearer",
+    "topic": "committee",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "What is quorum for AGM?",
+    "intent": "clarification",
+    "actor": "",
+    "action": "",
+    "subject": "quorum",
+    "topic": "agm",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "How to transfer share certificate?",
+    "intent": "procedure",
+    "actor": "",
+    "action": "transfer",
+    "subject": "share certificate",
+    "topic": "transfer",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Can society recover dues from defaulter?",
+    "intent": "authority",
+    "actor": "society",
+    "action": "recover",
+    "subject": "dues",
+    "topic": "defaulters",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Can member become committee member?",
+    "intent": "eligibility",
+    "actor": "committee",
+    "action": "",
+    "subject": "committee member",
+    "topic": "membership",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "What does bye-law 25 say about parking?",
+    "intent": "clarification",
+    "actor": "",
+    "action": "",
+    "subject": "parking slot",
+    "topic": "parking",
+    "section_ref": "25",
+    "strategy": "exact_citation"
+  },
+  {
+    "query": "Bye-law 17(a) committee composition",
+    "intent": "clarification",
+    "actor": "committee",
+    "action": "",
+    "subject": "committee member",
+    "topic": "committee",
+    "section_ref": "17",
+    "strategy": "exact_citation"
+  },
+  {
+    "query": "Tell me about parking rules",
+    "intent": "",
+    "actor": "",
+    "action": "",
+    "subject": "parking slot",
+    "topic": "parking",
+    "section_ref": "",
+    "strategy": "hybrid_reranker"
+  },
+  {
+    "query": "What are the rules?",
+    "intent": "clarification",
+    "actor": "",
+    "action": "",
+    "subject": "",
+    "topic": "general",
+    "section_ref": "",
+    "strategy": "hybrid_reranker"
+  },
+  {
+    "query": "Who can vote in committee elections?",
+    "intent": "eligibility",
+    "actor": "committee",
+    "action": "vote",
+    "subject": "",
+    "topic": "elections",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Do I have right to inspect accounts?",
+    "intent": "rights",
+    "actor": "",
+    "action": "",
+    "subject": "audit",
+    "topic": "audit",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "What can member do if committee refuses?",
+    "intent": "remedy",
+    "actor": "committee",
+    "action": "",
+    "subject": "",
+    "topic": "membership",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Society must maintain accounts?",
+    "intent": "obligation",
+    "actor": "society",
+    "action": "",
+    "subject": "audit",
+    "topic": "audit",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+    {
+    "query": "Can chairman hold AGM without notice?",
+    "intent": "authority",
+    "actor": "office_bearer",
+    "action": "hold",
+    "subject": "office bearer",
+    "topic": "agm",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Can committee allot parking slot?",
+    "intent": "authority",
+    "actor": "committee",
+    "action": "",
+    "subject": "parking slot",
+    "topic": "parking",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "How to use sinking fund for repairs?",
+    "intent": "procedure",
+    "actor": "",
+    "action": "",
+    "subject": "sinking fund",
+    "topic": "maintenance",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Can registrar appoint administrator?",
+    "intent": "authority",
+    "actor": "registrar",
+    "action": "appoint",
+    "subject": "",
+    "topic": "complaint",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "What is the redevelopment procedure?",
+    "intent": "procedure",
+    "actor": "",
+    "action": "",
+    "subject": "redevelopment",
+    "topic": "redevelopment",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Can society transfer shares to nominee?",
+    "intent": "authority",
+    "actor": "society",
+    "action": "transfer",
+    "subject": "nominee",
+    "topic": "transfer",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Can secretary call committee meeting?",
+    "intent": "authority",
+    "actor": "committee",
+    "action": "hold",
+    "subject": "office bearer",
+    "topic": "committee",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Section 12 maintenance charges",
+    "intent": "clarification",
+    "actor": "",
+    "action": "",
+    "subject": "maintenance charges",
+    "topic": "maintenance",
+    "section_ref": "12",
+    "strategy": "exact_citation"
+  },
+  {
+    "query": "Can member change nominee?",
+    "intent": "authority",
+    "actor": "member",
+    "action": "change",
+    "subject": "nominee",
+    "topic": "transfer",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "How to challenge maintenance bill?",
+    "intent": "procedure",
+    "actor": "",
+    "action": "challenge",
+    "subject": "maintenance charges",
+    "topic": "maintenance",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Can committee increase maintenance charges?",
+    "intent": "authority",
+    "actor": "committee",
+    "action": "change",
+    "subject": "maintenance charges",
+    "topic": "maintenance",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "What documents needed for share transfer?",
+    "intent": "clarification",
+    "actor": "",
+    "action": "transfer",
+    "subject": "transfer",
+    "topic": "transfer",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Procedure for electing office bearers",
+    "intent": "procedure",
+    "actor": "office_bearer",
+    "action": "appoint",
+    "subject": "office bearer",
+    "topic": "elections",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "Can society evict defaulter member?",
+    "intent": "authority",
+    "actor": "society",
+    "action": "remove",
+    "subject": "default",
+    "topic": "defaulters",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  },
+  {
+    "query": "What is the process for AGM adjournment?",
+    "intent": "procedure",
+    "actor": "",
+    "action": "",
+    "subject": "meeting",
+    "topic": "agm",
+    "section_ref": "",
+    "strategy": "keyword_semantic"
+  }
+]

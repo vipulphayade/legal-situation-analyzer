@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import csv
-import hashlib
+
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -10,8 +11,11 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from bylaw_seed import build_dataset, build_relations
+from bylaw_seed import RETRIEVAL_STOP_WORDS, build_dataset, build_relations
 from embeddings import get_embedding_service
+
+
+logger = logging.getLogger(__name__)
 
 
 ROOT_DIR = Path(os.getenv("APP_ROOT", Path(__file__).resolve().parent))
@@ -19,61 +23,6 @@ if not (ROOT_DIR / "dataset").exists():
     ROOT_DIR = ROOT_DIR.parent
 
 DEFAULT_DATASET_PATH = ROOT_DIR / "dataset" / "bylaws_dataset.json"
-
-
-SCHEMA_COLUMNS_SQL = [
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS chapter TEXT NOT NULL DEFAULT ''",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS topic_group TEXT",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS issue_category TEXT",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS layman_keywords TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS official_excerpt TEXT NOT NULL DEFAULT ''",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS normalized_legal_text TEXT NOT NULL DEFAULT ''",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS source_grounded_official_text TEXT NOT NULL DEFAULT ''",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS official_grounding_status TEXT NOT NULL DEFAULT ''",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS retrieval_text TEXT NOT NULL DEFAULT ''",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS technical_terms TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS plain_english TEXT NOT NULL DEFAULT ''",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS why_this_applies TEXT NOT NULL DEFAULT ''",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS real_world_example TEXT NOT NULL DEFAULT ''",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS common_disputes TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS example_queries TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS applicable_when TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS trigger_conditions TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS not_applicable_when TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS issue_patterns TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS recommended_next_steps TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS documents_to_collect TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]",
-    "ALTER TABLE bylaws ADD COLUMN IF NOT EXISTS authority_to_approach TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]",
-]
-
-RETRIEVAL_STOP_WORDS = {
-    "the",
-    "a",
-    "an",
-    "and",
-    "or",
-    "of",
-    "to",
-    "in",
-    "for",
-    "with",
-    "by",
-    "on",
-    "at",
-    "from",
-    "society",
-    "societies",
-    "registered",
-    "model",
-    "bye",
-    "law",
-    "bye-law",
-    "byelaw",
-    "act",
-    "rules",
-    "rule",
-}
-
 
 def serialize_embedding(vector: list[float]) -> str:
     rounded = [f"{value:.8f}" for value in vector]
@@ -142,7 +91,6 @@ def build_retrieval_text(entry: dict[str, Any]) -> str:
         entry.get("title", ""),
         entry.get("chapter", ""),
         entry.get("topic_group", ""),
-        entry.get("issue_category", ""),
         entry.get("official_excerpt", ""),
         entry.get("normalized_legal_text", ""),
         entry.get("source_grounded_official_text", ""),
@@ -152,12 +100,6 @@ def build_retrieval_text(entry: dict[str, Any]) -> str:
     ]
     return " ".join(part for part in parts if part).strip()
 
-
-def _dataset_fingerprint(path: Path) -> str:
-    if not path.exists():
-        return "missing"
-    data = path.read_bytes()
-    return hashlib.sha256(data).hexdigest()
 
 
 def build_search_text(entry: dict[str, Any]) -> str:
@@ -206,8 +148,7 @@ def normalize_entry(entry: dict[str, Any]) -> dict[str, Any]:
             "subsection": subsection,
             "title": title,
             "chapter": chapter,
-            "topic_group": entry.get("topic_group") or entry.get("topic") or entry.get("issue_category") or chapter or "",
-            "issue_category": entry.get("issue_category") or entry.get("topic") or "",
+            "topic_group": entry.get("topic_group") or entry.get("topic") or chapter or "",
             "official_excerpt": entry.get("official_excerpt") or "",
             "normalized_text": entry.get("normalized_text") or content,
             "normalized_legal_text": entry.get("normalized_legal_text") or entry.get("normalized_text") or content,
@@ -223,9 +164,8 @@ def normalize_entry(entry: dict[str, Any]) -> dict[str, Any]:
         "subsection": subsection,
         "title": title,
         "chapter": chapter,
-        "topic": entry.get("topic") or entry.get("topic_group") or entry.get("issue_category") or chapter or "model bye-laws",
-        "topic_group": entry.get("topic_group") or entry.get("topic") or entry.get("issue_category") or chapter or "",
-        "issue_category": entry.get("issue_category") or entry.get("topic") or "",
+        "topic": entry.get("topic") or entry.get("topic_group") or chapter or "model bye-laws",
+        "topic_group": entry.get("topic_group") or entry.get("topic") or chapter or "",
         "keywords": _as_list(entry.get("keywords")),
         "technical_terms": _as_list(entry.get("technical_terms")),
         "layman_keywords": _as_list(entry.get("layman_keywords") or entry.get("layman_terms")),
@@ -362,18 +302,8 @@ def load_dataset(dataset_path: str | None = None) -> list[dict[str, Any]]:
                     rows.append(normalized)
             return rows
 
-    return build_dataset()
-
-
-def ensure_schema(db: Session) -> None:
-    for statement in SCHEMA_COLUMNS_SQL:
-        db.execute(text(statement))
-    db.commit()
-
-
-def ensure_vector_extension(db: Session) -> None:
-    db.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-    db.commit()
+    logger.error("Dataset not found at %s — cannot seed the database.", path)
+    raise FileNotFoundError(f"Dataset not found at {path}. Place the dataset file at {DEFAULT_DATASET_PATH} or set APP_ROOT to the project root.")
 
 
 def import_dataset(
@@ -381,9 +311,6 @@ def import_dataset(
     dataset_path: str | None = None,
     replace_existing: bool = False,
 ) -> int:
-    ensure_vector_extension(db)
-    ensure_schema(db)
-
     dataset = load_dataset(dataset_path)
     relations = build_relations(dataset)
     embedder = get_embedding_service()
@@ -573,16 +500,79 @@ def import_dataset(
     return len(dataset)
 
 
+
+
+
+def check_dataset_integrity(db: Session) -> dict:
+    """Run a lightweight integrity check on the dataset.
+
+    Returns a dict with keys:
+      - ok (bool): True if all checks pass
+      - count (int): current row count
+      - missing_embeddings (int): rows without embeddings
+      - message (str): human-readable summary
+    """
+    from dataset_verifier import verify_dataset_integrity
+
+    minimum_expected = int(os.getenv("MINIMUM_DATASET_SIZE", "1000"))
+    count = db.execute(text("SELECT COUNT(*) FROM bylaws")).scalar_one()
+    missing_embeddings = db.execute(
+        text("SELECT COUNT(*) FROM bylaws WHERE embedding IS NULL")
+    ).scalar_one()
+
+    structural = verify_dataset_integrity(db)
+
+    ok = (
+        count >= minimum_expected
+        and missing_embeddings == 0
+        and structural.get("sections_ok", True)
+        and structural.get("subsections_ok", True)
+    )
+
+    messages = []
+    if count < minimum_expected:
+        messages.append(f"row count {count} < minimum {minimum_expected}")
+    if missing_embeddings > 0:
+        messages.append(f"{missing_embeddings} rows missing embeddings")
+    if not structural.get("sections_ok"):
+        messages.append("section verification failed")
+    if not structural.get("subsections_ok"):
+        messages.append("subsection verification failed")
+
+    return {
+        "ok": ok,
+        "count": count,
+        "missing_embeddings": missing_embeddings,
+        "message": "; ".join(messages) if messages else "integrity OK",
+    }
+
+
 def ensure_seed_data(db: Session) -> int:
-    rebuild = os.getenv("REBUILD_DATASET_ON_STARTUP", "1").strip().lower() not in {"0", "false", "no"}
+    """Verify dataset integrity and rebuild if needed.
+
+    Default behaviour (REBUILD_DATASET_ON_STARTUP=0):
+      1. Check dataset integrity.
+      2. If integrity OK → return count (no rebuild).
+      3. If integrity fails AND count == 0 → first startup, import dataset.
+      4. If integrity fails AND REBUILD=1 → rebuild.
+      5. If integrity fails AND REBUILD=0 → log warning, start anyway.
+    """
+    rebuild = os.getenv("REBUILD_DATASET_ON_STARTUP", "0").strip().lower() not in {"0", "false", "no"}
+
+    integrity = check_dataset_integrity(db)
+
+    if integrity["ok"]:
+        return integrity["count"]
+
+    if integrity["count"] == 0:
+        print("[import_service] First startup detected. Importing canonical dataset.")
+        return import_dataset(db, replace_existing=False)
+
     if rebuild:
         return import_dataset(db, replace_existing=True)
 
-    dataset_size = len(load_dataset(os.getenv("DATASET_PATH")))
-    minimum_expected = int(os.getenv("MINIMUM_DATASET_SIZE", str(dataset_size)))
-    count = db.execute(text("SELECT COUNT(*) FROM bylaws")).scalar_one()
-    missing_embeddings = db.execute(text("SELECT COUNT(*) FROM bylaws WHERE embedding IS NULL")).scalar_one()
-
-    if count != dataset_size or count < minimum_expected or missing_embeddings > 0:
-        return import_dataset(db, replace_existing=True)
-    return count
+    print(
+        f"[import_service] WARNING: Dataset integrity check failed ({integrity['message']}) "
+        "but REBUILD_DATASET_ON_STARTUP=0, continuing with existing data."
+    )
+    return integrity["count"]

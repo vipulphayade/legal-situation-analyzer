@@ -85,6 +85,7 @@ type AnalyzeResponse = {
   recommended_next_steps?: string[]
   documents_to_collect?: string[]
   possible_authorities?: string[]
+  session_token?: string
 }
 
 type FollowupResponse = {
@@ -155,6 +156,7 @@ function renderStructuredFacts(facts: AnalyzeResponse["structured_specific_data"
 function App() {
   const [description, setDescription] = useState("")
   const [result, setResult] = useState<AnalyzeResponse | null>(null)
+  const [sessionToken, setSessionToken] = useState("")
   const [followup, setFollowup] = useState("")
   const [followupResult, setFollowupResult] = useState<FollowupResponse | null>(null)
   const [status, setStatus] = useState<StatusState>("idle")
@@ -201,6 +203,7 @@ function App() {
 
       const payload = (await response.json()) as AnalyzeResponse
       setResult(payload)
+      setSessionToken(payload.session_token ?? "")
       setStatus("success")
       setMessage(payload.needs_clarification ? "Analysis ready. Clarification may improve precision." : "Analysis ready.")
     } catch (error) {
@@ -226,7 +229,7 @@ function App() {
       const response = await fetch("/api/followup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, context: result }),
+        body: JSON.stringify({ question, session_token: sessionToken }),
       })
 
       if (!response.ok) {
@@ -234,7 +237,8 @@ function App() {
         throw new Error(payload?.detail || "The follow-up request could not be processed.")
       }
 
-      setFollowupResult((await response.json()) as FollowupResponse)
+      const followupPayload = (await response.json()) as FollowupResponse
+      setFollowupResult(followupPayload)
       setFollowupStatus("success")
     } catch {
       setFollowupStatus("error")

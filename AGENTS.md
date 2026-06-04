@@ -72,6 +72,28 @@ This repository powers a legal retrieval system for Maharashtra cooperative hous
 - Do not broaden retrieval changes beyond the issue being fixed.
 - Do not rewrite unrelated files when a normalization fix is sufficient.
 
+## Reranker Integration (Cross-encoder)
+- Enabled by default in `_analyze_description()` after heuristic scoring.
+- Controlled by `RERANK_TOP_K = 20` in `api/search.py`.
+- Merge logic: reranker top-5 first, then heuristic top-5 fillers — non-regressive.
+- Fallback: if reranker raises any `Exception`, silently falls back to heuristic-only.
+- Exact citation lookups bypass reranking entirely (early return before scoring).
+- Latency measured by `RERANKER_LATENCY` Prometheus histogram (key: `legal_analyzer_reranker_duration_seconds`).
+- Current CPU latency: ~200-220ms per query for 20 candidates (model: `cross-encoder/ms-marco-MiniLM-L-6-v2`).
+- Benchmark with reranker: Top-1 80.8%, MRR 0.8405 (+21pp / +0.147 over heuristic-only).
+
+## Confidence Thresholds
+- Confidence formula: `primary_score * 0.85 + score_gap * 0.15 + consensus_bonus`.
+- Consensus bonus: +0.08 when heuristic top-1 == reranker top-1, -0.05 when they disagree.
+- Labels: **Strong Match** (>= 0.80), **Likely Relevant** (>= 0.65), **Broad Topic Match** (>= 0.40), **Weak Match** (< 0.40).
+- Clarification tiers:
+  - `primary_score < 0.35`: NO_MATCH — always asks for clarification.
+  - `0.35 <= primary_score < 0.55`: LOW — asks for clarification.
+  - `0.55 <= primary_score < 0.65`: asks for clarification only if query is broad or low-signal.
+  - `primary_score >= 0.65`: MEDIUM/HIGH — no clarification needed.
+- The `confidence_label` field displays "Needs Clarification" when `needs_clarification=true`, overriding the numeric label.
+- When `needs_clarification=true` and confidence >= 0.55, confidence is capped at 0.55 to avoid misleading high-confidence display.
+
 ## Prompting Expectations for Future Codex Tasks
 - State the exact issue, the affected layer, and the desired behavior.
 - Specify whether the fix is retrieval, schema, frontend rendering, ingestion, or validation.

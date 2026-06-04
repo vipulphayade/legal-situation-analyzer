@@ -149,6 +149,15 @@ def verify_embeddings(db: Session) -> list[dict[str, object]]:
     return missing
 
 
+def verify_dataset_integrity(db: Session) -> dict:
+    missing_sections = verify_sections(db)
+    subsection_gaps = verify_subsections(db)
+    return {
+        "sections_ok": len(missing_sections) == 0,
+        "subsections_ok": len(subsection_gaps) == 0,
+    }
+
+
 def run_dataset_sanity_check(db: Session) -> dict[str, object]:
     results: dict[str, object] = {}
     checks = {
